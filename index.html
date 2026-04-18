@@ -3,12 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Project</title>
+  <title>Todo List</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <h1>Hello, World!</h1>
-  <p>Edit this page to get started.</p>
+  <div class="container">
+    <h1>Todo List</h1>
+    <div class="input-section">
+      <input type="text" id="todoInput" placeholder="Add a new todo..." />
+      <button id="addBtn">Add</button>
+    </div>
+    <ul id="todoList"></ul>
+  </div>
   <script type="module" src="/main.js"></script>
 </body>
 </html>
