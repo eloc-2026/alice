@@ -2,19 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Todo List</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Maze Escape</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Todo List</h1>
-    <div class="input-section">
-      <input type="text" id="todoInput" placeholder="Add a new todo..." />
-      <button id="addBtn">Add</button>
+  <!-- Start Screen -->
+  <div id="startScreen" class="screen">
+    <div class="screen-content">
+      <h1 class="game-title">MAZE ESCAPE</h1>
+      <div class="level-grid" id="levelGrid"></div>
+      <button class="btn btn-primary" id="continueBtn">Continue</button>
+      <button class="btn btn-secondary" id="settingsBtn">
+        <span id="soundIcon">🔊</span> Sound
+      </button>
     </div>
-    <ul id="todoList"></ul>
   </div>
+
+  <!-- Game Screen -->
+  <div id="gameScreen" class="screen hidden">
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-left">
+        <span class="hud-item">Level <span id="levelNum">1</span></span>
+        <span class="hud-item">⏱️ <span id="timer">00:00</span></span>
+        <span class="hud-item">👣 <span id="moves">0</span></span>
+      </div>
+      <div class="hud-right">
+        <span class="hud-item" id="keysDisplay">🔑 <span id="keys">0</span></span>
+        <span class="hud-item" id="livesDisplay"></span>
+        <button class="btn-icon" id="pauseBtn">⏸</button>
+      </div>
+    </div>
+
+    <!-- Maze Container -->
+    <div class="maze-wrapper">
+      <div id="mazeContainer" class="maze-container"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="dpad">
+        <button class="dpad-btn dpad-up" data-direction="up" aria-label="Move up">↑</button>
+        <button class="dpad-btn dpad-left" data-direction="left" aria-label="Move left">←</button>
+        <button class="dpad-btn dpad-right" data-direction="right" aria-label="Move right">→</button>
+        <button class="dpad-btn dpad-down" data-direction="down" aria-label="Move down">↓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Screen -->
+  <div id="victoryScreen" class="screen hidden">
+    <div class="screen-content">
+      <h2 class="victory-title">LEVEL COMPLETE!</h2>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-label">Time</span>
+          <span class="stat-value" id="finalTime">00:00</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Moves</span>
+          <span class="stat-value" id="finalMoves">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Best Time</span>
+          <span class="stat-value" id="bestTime">--:--</span>
+        </div>
+      </div>
+      <div class="button-group">
+        <button class="btn btn-secondary" id="replayBtn">Replay</button>
+        <button class="btn btn-primary" id="nextLevelBtn">Next Level</button>
+      </div>
+      <button class="btn btn-text" id="levelSelectBtn">Level Select</button>
+    </div>
+  </div>
+
+  <!-- Pause Overlay -->
+  <div id="pauseOverlay" class="overlay hidden">
+    <div class="overlay-content">
+      <h2>PAUSED</h2>
+      <div class="button-group-vertical">
+        <button class="btn btn-primary" id="resumeBtn">Resume</button>
+        <button class="btn btn-secondary" id="restartBtn">Restart</button>
+        <button class="btn btn-text" id="quitBtn">Quit to Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div id="gameOverOverlay" class="overlay hidden">
+    <div class="overlay-content">
+      <h2>GAME OVER</h2>
+      <p class="game-over-msg">No lives remaining</p>
+      <div class="button-group-vertical">
+        <button class="btn btn-primary" id="retryBtn">Retry Level</button>
+        <button class="btn btn-text" id="quitGameOverBtn">Quit to Menu</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/main.js"></script>
 </body>
 </html>
