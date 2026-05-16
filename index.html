@@ -3,101 +3,425 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Maze Escape</title>
+  <title>Exercise Tracker</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <!-- Start Screen -->
-  <div id="startScreen" class="screen">
+  <!-- Home/Dashboard Screen -->
+  <div id="homeScreen" class="screen">
     <div class="screen-content">
-      <h1 class="game-title">MAZE ESCAPE</h1>
-      <div class="level-grid" id="levelGrid"></div>
-      <button class="btn btn-primary" id="continueBtn">Continue</button>
-      <button class="btn btn-secondary" id="settingsBtn">
-        <span id="soundIcon">🔊</span> Sound
+      <h1 class="app-title">EXERCISE TRACKER</h1>
+
+      <!-- Streak Display -->
+      <div class="streak-display">
+        <span class="streak-fire">🔥</span>
+        <span id="streakCount" class="streak-number">0</span>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="pointsToday">0</div>
+          <div class="stat-label">Points Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalPoints">0</div>
+          <div class="stat-label">Total Points</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="userLevel">1</div>
+          <div class="stat-label">Level</div>
+        </div>
+      </div>
+
+      <!-- Daily Progress -->
+      <div class="progress-section">
+        <div class="progress-label">Daily Goal</div>
+        <div class="progress-container">
+          <div id="dailyProgress" class="progress-bar" style="width: 0%">
+            <span id="dailyProgressText">0/50</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Progress -->
+      <div class="progress-section">
+        <div class="progress-label">Weekly Goal</div>
+        <div class="progress-container">
+          <div id="weeklyProgress" class="progress-bar" style="width: 0%">
+            <span id="weeklyProgressText">0/500</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Motivational Message -->
+      <div id="motivationalMessage" class="motivational-message">
+        Ready to start tracking? Log your first workout!
+      </div>
+
+      <!-- Primary Action -->
+      <button class="btn btn-primary btn-large" id="logWorkoutBtn">Log Workout</button>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-screen="home">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
       </button>
-    </div>
+      <button class="nav-btn" data-screen="profile">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+      </button>
+      <button class="nav-btn" data-screen="friends">
+        <span class="nav-icon">👥</span>
+        <span>Friends</span>
+      </button>
+      <button class="nav-btn" data-screen="history">
+        <span class="nav-icon">📅</span>
+        <span>History</span>
+      </button>
+    </nav>
   </div>
 
-  <!-- Game Screen -->
-  <div id="gameScreen" class="screen hidden">
-    <!-- HUD -->
-    <div class="hud">
-      <div class="hud-left">
-        <span class="hud-item">Level <span id="levelNum">1</span></span>
-        <span class="hud-item">⏱️ <span id="timer">00:00</span></span>
-        <span class="hud-item">👣 <span id="moves">0</span></span>
+  <!-- Logger Screen -->
+  <div id="loggerScreen" class="screen hidden">
+    <div class="screen-content with-bottom-nav">
+      <div class="screen-header">
+        <button class="btn-icon" id="backBtn">←</button>
+        <h2>Log Workout</h2>
+        <button class="btn-icon" id="completeSessionBtn">✓</button>
       </div>
-      <div class="hud-right">
-        <span class="hud-item" id="keysDisplay">🔑 <span id="keys">0</span></span>
-        <span class="hud-item" id="livesDisplay"></span>
-        <button class="btn-icon" id="pauseBtn">⏸</button>
+
+      <!-- Exercise Grid -->
+      <div id="exerciseGrid" class="exercise-grid"></div>
+
+      <!-- Rep Counter (shown when exercise selected) -->
+      <div id="repCounterSection" class="rep-counter-section hidden">
+        <div class="selected-exercise">
+          <span id="selectedExerciseIcon" class="selected-exercise-icon"></span>
+          <span id="selectedExerciseName" class="selected-exercise-name"></span>
+        </div>
+
+        <div class="rep-counter">
+          <button class="rep-btn" data-delta="-10">-10</button>
+          <button class="rep-btn" data-delta="-5">-5</button>
+          <button class="rep-btn" data-delta="-1">-1</button>
+          <div id="repDisplay" class="rep-display">0</div>
+          <button class="rep-btn" data-delta="1">+1</button>
+          <button class="rep-btn" data-delta="5">+5</button>
+          <button class="rep-btn large" data-delta="10">+10</button>
+        </div>
+
+        <!-- Duration Timer -->
+        <div class="duration-timer">
+          <div class="timer-label">Duration (optional)</div>
+          <div id="timerDisplay" class="timer-display">00:00</div>
+          <button class="btn btn-secondary btn-small" id="timerToggleBtn">Start</button>
+        </div>
+
+        <!-- Points Preview -->
+        <div id="pointsPreview" class="points-preview">
+          Will earn <span id="previewPoints">0</span> points
+        </div>
+
+        <!-- Log Exercise Button -->
+        <button class="btn btn-primary" id="logExerciseBtn">Log Exercise</button>
+      </div>
+
+      <!-- Current Session Summary (if exercises logged) -->
+      <div id="sessionSummary" class="session-summary hidden">
+        <h3>Current Session</h3>
+        <div id="sessionExerciseList" class="session-exercise-list"></div>
+        <div class="session-total">Total: <span id="sessionTotalPoints">0</span> points</div>
       </div>
     </div>
 
-    <!-- Maze Container -->
-    <div class="maze-wrapper">
-      <div id="mazeContainer" class="maze-container"></div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-      <div class="dpad">
-        <button class="dpad-btn dpad-up" data-direction="up" aria-label="Move up">↑</button>
-        <button class="dpad-btn dpad-left" data-direction="left" aria-label="Move left">←</button>
-        <button class="dpad-btn dpad-right" data-direction="right" aria-label="Move right">→</button>
-        <button class="dpad-btn dpad-down" data-direction="down" aria-label="Move down">↓</button>
-      </div>
-    </div>
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="home">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" data-screen="profile">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+      </button>
+      <button class="nav-btn" data-screen="friends">
+        <span class="nav-icon">👥</span>
+        <span>Friends</span>
+      </button>
+      <button class="nav-btn" data-screen="history">
+        <span class="nav-icon">📅</span>
+        <span>History</span>
+      </button>
+    </nav>
   </div>
 
-  <!-- Victory Screen -->
-  <div id="victoryScreen" class="screen hidden">
-    <div class="screen-content">
-      <h2 class="victory-title">LEVEL COMPLETE!</h2>
-      <div class="stats">
-        <div class="stat-item">
-          <span class="stat-label">Time</span>
-          <span class="stat-value" id="finalTime">00:00</span>
+  <!-- Profile Screen -->
+  <div id="profileScreen" class="screen hidden">
+    <div class="screen-content with-bottom-nav">
+      <div class="screen-header">
+        <h2>Profile</h2>
+        <button class="btn-icon" id="settingsBtn">⚙️</button>
+      </div>
+
+      <!-- User Info -->
+      <div class="profile-header">
+        <div class="profile-avatar">💪</div>
+        <h3 id="userName">Athlete</h3>
+      </div>
+
+      <!-- Profile Stats -->
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="profileTotalPoints">0</div>
+          <div class="profile-stat-label">Total Points</div>
         </div>
-        <div class="stat-item">
-          <span class="stat-label">Moves</span>
-          <span class="stat-value" id="finalMoves">0</span>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="profileLevel">1</div>
+          <div class="profile-stat-label">Level</div>
         </div>
-        <div class="stat-item">
-          <span class="stat-label">Best Time</span>
-          <span class="stat-value" id="bestTime">--:--</span>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="profileWorkouts">0</div>
+          <div class="profile-stat-label">Workouts</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="profileLongestStreak">0</div>
+          <div class="profile-stat-label">Best Streak</div>
         </div>
       </div>
-      <div class="button-group">
-        <button class="btn btn-secondary" id="replayBtn">Replay</button>
-        <button class="btn btn-primary" id="nextLevelBtn">Next Level</button>
-      </div>
-      <button class="btn btn-text" id="levelSelectBtn">Level Select</button>
+
+      <!-- Sticker Collection -->
+      <h3 class="section-title">Sticker Collection</h3>
+      <div id="stickerGrid" class="sticker-grid"></div>
     </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="home">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn active" data-screen="profile">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+      </button>
+      <button class="nav-btn" data-screen="friends">
+        <span class="nav-icon">👥</span>
+        <span>Friends</span>
+      </button>
+      <button class="nav-btn" data-screen="history">
+        <span class="nav-icon">📅</span>
+        <span>History</span>
+      </button>
+    </nav>
   </div>
 
-  <!-- Pause Overlay -->
-  <div id="pauseOverlay" class="overlay hidden">
+  <!-- Friends Screen -->
+  <div id="friendsScreen" class="screen hidden">
+    <div class="screen-content with-bottom-nav">
+      <div class="screen-header">
+        <h2>Friends</h2>
+        <button class="btn-icon" id="addFriendBtn">+</button>
+      </div>
+
+      <!-- Sort Toggle -->
+      <div class="sort-toggle">
+        <button class="sort-btn active" data-sort="points">By Points</button>
+        <button class="sort-btn" data-sort="streak">By Streak</button>
+      </div>
+
+      <!-- Leaderboard -->
+      <div id="leaderboard" class="leaderboard"></div>
+
+      <!-- Empty State -->
+      <div id="friendsEmptyState" class="empty-state hidden">
+        <div class="empty-icon">👥</div>
+        <p>No friends yet. Add some to compete!</p>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="home">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" data-screen="profile">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+      </button>
+      <button class="nav-btn active" data-screen="friends">
+        <span class="nav-icon">👥</span>
+        <span>Friends</span>
+      </button>
+      <button class="nav-btn" data-screen="history">
+        <span class="nav-icon">📅</span>
+        <span>History</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- History Screen -->
+  <div id="historyScreen" class="screen hidden">
+    <div class="screen-content with-bottom-nav">
+      <div class="screen-header">
+        <h2>History</h2>
+      </div>
+
+      <!-- Simple session list for now -->
+      <div id="historyList" class="history-list"></div>
+
+      <!-- Empty State -->
+      <div id="historyEmptyState" class="empty-state hidden">
+        <div class="empty-icon">📅</div>
+        <p>No workouts yet. Start your first session!</p>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="home">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" data-screen="profile">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+      </button>
+      <button class="nav-btn" data-screen="friends">
+        <span class="nav-icon">👥</span>
+        <span>Friends</span>
+      </button>
+      <button class="nav-btn active" data-screen="history">
+        <span class="nav-icon">📅</span>
+        <span>History</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Success Overlay -->
+  <div id="successOverlay" class="overlay hidden">
     <div class="overlay-content">
-      <h2>PAUSED</h2>
-      <div class="button-group-vertical">
-        <button class="btn btn-primary" id="resumeBtn">Resume</button>
-        <button class="btn btn-secondary" id="restartBtn">Restart</button>
-        <button class="btn btn-text" id="quitBtn">Quit to Menu</button>
+      <h2 class="success-title">Workout Complete!</h2>
+
+      <!-- Points Earned -->
+      <div class="points-earned">
+        <div class="points-earned-value" id="pointsEarned">0</div>
+        <div class="points-earned-label">Points Earned</div>
+      </div>
+
+      <!-- Current Streak -->
+      <div class="success-streak">
+        <span class="success-streak-icon">🔥</span>
+        <span id="successStreakCount">0</span>
+        <span> day streak!</span>
+      </div>
+
+      <!-- New Stickers -->
+      <div id="newStickersSection" class="new-stickers hidden">
+        <h3>New Stickers Unlocked!</h3>
+        <div id="newStickersList" class="new-stickers-list"></div>
+      </div>
+
+      <!-- Motivational Message -->
+      <div id="successMessage" class="success-message">Keep up the great work!</div>
+
+      <!-- Continue Button -->
+      <button class="btn btn-primary" id="successContinueBtn">Continue</button>
+    </div>
+  </div>
+
+  <!-- Sticker Detail Overlay -->
+  <div id="stickerOverlay" class="overlay hidden">
+    <div class="overlay-content">
+      <button class="btn-icon overlay-close" id="closeStickerBtn">×</button>
+
+      <div class="sticker-detail">
+        <div id="stickerDetailIcon" class="sticker-detail-icon"></div>
+        <h3 id="stickerDetailName" class="sticker-detail-name"></h3>
+        <p id="stickerDetailDescription" class="sticker-detail-description"></p>
+
+        <!-- Progress (for locked stickers) -->
+        <div id="stickerProgressSection" class="sticker-progress-section hidden">
+          <div class="progress-container">
+            <div id="stickerProgressBar" class="progress-bar" style="width: 0%">
+              <span id="stickerProgressText">0%</span>
+            </div>
+          </div>
+          <p class="sticker-progress-message">Keep going!</p>
+        </div>
+
+        <!-- Unlocked message -->
+        <div id="stickerUnlockedSection" class="sticker-unlocked-section hidden">
+          <p class="sticker-unlocked-message">✓ Unlocked!</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Game Over Overlay -->
-  <div id="gameOverOverlay" class="overlay hidden">
+  <!-- Add Friend Overlay -->
+  <div id="addFriendOverlay" class="overlay hidden">
     <div class="overlay-content">
-      <h2>GAME OVER</h2>
-      <p class="game-over-msg">No lives remaining</p>
-      <div class="button-group-vertical">
-        <button class="btn btn-primary" id="retryBtn">Retry Level</button>
-        <button class="btn btn-text" id="quitGameOverBtn">Quit to Menu</button>
+      <button class="btn-icon overlay-close" id="closeAddFriendBtn">×</button>
+
+      <h2>Add Friend</h2>
+      <form id="addFriendForm">
+        <input
+          type="text"
+          id="friendNameInput"
+          class="form-input"
+          placeholder="Friend's name"
+          maxlength="30"
+          required
+        />
+        <button type="submit" class="btn btn-primary">Add Friend</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Overlay -->
+  <div id="settingsOverlay" class="overlay hidden">
+    <div class="overlay-content">
+      <button class="btn-icon overlay-close" id="closeSettingsBtn">×</button>
+
+      <h2>Settings</h2>
+
+      <div class="settings-section">
+        <div class="setting-item">
+          <label>Sound</label>
+          <button class="btn btn-secondary" id="soundToggleBtn">
+            <span id="soundIcon">🔊</span> <span id="soundStatus">On</span>
+          </button>
+        </div>
+
+        <div class="setting-item">
+          <label for="dailyGoalInput">Daily Goal (points)</label>
+          <input
+            type="number"
+            id="dailyGoalInput"
+            class="form-input"
+            min="10"
+            max="500"
+            value="50"
+          />
+        </div>
+
+        <div class="setting-item">
+          <label for="weeklyGoalInput">Weekly Goal (points)</label>
+          <input
+            type="number"
+            id="weeklyGoalInput"
+            class="form-input"
+            min="50"
+            max="5000"
+            value="500"
+          />
+        </div>
       </div>
+
+      <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
     </div>
   </div>
 

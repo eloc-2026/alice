@@ -1,500 +1,646 @@
 // ========================================
-// CONSTANTS & CONFIGURATION
+// CONSTANTS & DEFAULT DATA
 // ========================================
 
-const TILE_TYPES = {
-  WALL: 'wall',
-  PATH: 'path',
-  PLAYER: 'player',
-  EXIT: 'exit',
-  KEY: 'key',
-  DOOR: 'door',
-  ENEMY: 'enemy',
-  TELEPORT: 'teleport',
-  SPEEDBOOST: 'speedboost'
+const STORAGE_KEYS = {
+  USER: 'exerciseTrackerUser',
+  SESSIONS: 'exerciseTrackerSessions',
+  EXERCISES: 'exerciseTrackerExercises',
+  FRIENDS: 'exerciseTrackerFriends',
+  STICKERS: 'exerciseTrackerStickers',
+  SETTINGS: 'exerciseTrackerSettings'
 };
 
-const DIRECTIONS = {
-  UP: { dx: 0, dy: -1, name: 'up' },
-  DOWN: { dx: 0, dy: 1, name: 'down' },
-  LEFT: { dx: -1, dy: 0, name: 'left' },
-  RIGHT: { dx: 1, dy: 0, name: 'right' }
+const DEFAULT_EXERCISES = {
+  "push-ups": { name: "Push-ups", icon: "💪", pointsPerRep: 1, category: "upper-body" },
+  "pull-ups": { name: "Pull-ups", icon: "🏋️", pointsPerRep: 2, category: "upper-body" },
+  "squats": { name: "Squats", icon: "🦵", pointsPerRep: 1, category: "lower-body" },
+  "sit-ups": { name: "Sit-ups", icon: "🔥", pointsPerRep: 1, category: "core" },
+  "plank": { name: "Plank", icon: "⏱️", pointsPerRep: 2, category: "core", unit: "seconds" },
+  "burpees": { name: "Burpees", icon: "⚡", pointsPerRep: 3, category: "full-body" }
 };
 
-const INITIAL_LIVES = 3;
-const MOVE_ANIMATION_MS = 150;
-const ENEMY_MOVE_INTERVAL = 800;
-
-// Hand-crafted tutorial levels (1-5)
-const LEVELS = [
-  // Level 1: Simple 5x5 maze
-  {
-    width: 5,
-    height: 5,
-    grid: [
-      ['wall', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'player', 'path', 'path', 'wall'],
-      ['wall', 'path', 'wall', 'path', 'wall'],
-      ['wall', 'path', 'path', 'exit', 'wall'],
-      ['wall', 'wall', 'wall', 'wall', 'wall']
-    ],
-    enemies: [],
-    keys: 0
+const DEFAULT_STICKERS = {
+  "first-workout": {
+    name: "First Steps",
+    description: "Complete your first workout",
+    icon: "🌟",
+    condition: { type: "session-count", value: 1 }
   },
-  // Level 2: 7x7 with decision point
-  {
-    width: 7,
-    height: 7,
-    grid: [
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'player', 'path', 'wall', 'path', 'path', 'wall'],
-      ['wall', 'path', 'path', 'wall', 'path', 'wall', 'wall'],
-      ['wall', 'wall', 'path', 'path', 'path', 'path', 'wall'],
-      ['wall', 'path', 'path', 'wall', 'wall', 'path', 'wall'],
-      ['wall', 'path', 'wall', 'wall', 'path', 'exit', 'wall'],
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall']
-    ],
-    enemies: [],
-    keys: 0
+  "streak-7": {
+    name: "Week Warrior",
+    description: "Maintain a 7-day streak",
+    icon: "🔥",
+    condition: { type: "streak", value: 7 }
   },
-  // Level 3: 8x8 with dead ends
-  {
-    width: 8,
-    height: 8,
-    grid: [
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'player', 'path', 'path', 'wall', 'path', 'path', 'wall'],
-      ['wall', 'wall', 'wall', 'path', 'wall', 'path', 'wall', 'wall'],
-      ['wall', 'path', 'path', 'path', 'path', 'path', 'path', 'wall'],
-      ['wall', 'path', 'wall', 'wall', 'wall', 'wall', 'path', 'wall'],
-      ['wall', 'path', 'path', 'wall', 'path', 'path', 'path', 'wall'],
-      ['wall', 'wall', 'path', 'path', 'path', 'wall', 'exit', 'wall'],
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall']
-    ],
-    enemies: [],
-    keys: 0
+  "streak-30": {
+    name: "Monthly Master",
+    description: "30-day streak",
+    icon: "💎",
+    condition: { type: "streak", value: 30 }
   },
-  // Level 4: 10x10 with keys and doors
-  {
-    width: 10,
-    height: 10,
-    grid: [
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'player', 'path', 'path', 'wall', 'path', 'path', 'path', 'key', 'wall'],
-      ['wall', 'wall', 'wall', 'path', 'wall', 'path', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'path', 'path', 'path', 'path', 'path', 'wall', 'path', 'path', 'wall'],
-      ['wall', 'path', 'wall', 'wall', 'wall', 'door', 'wall', 'path', 'wall', 'wall'],
-      ['wall', 'path', 'path', 'path', 'wall', 'path', 'path', 'path', 'path', 'wall'],
-      ['wall', 'wall', 'wall', 'path', 'wall', 'path', 'wall', 'wall', 'path', 'wall'],
-      ['wall', 'key', 'path', 'path', 'path', 'path', 'path', 'wall', 'path', 'wall'],
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'path', 'path', 'exit', 'wall'],
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall']
-    ],
-    enemies: [],
-    keys: 2
+  "100-pushups": {
+    name: "Century Club",
+    description: "100 total push-ups",
+    icon: "💯",
+    condition: { type: "exercise-total", exercise: "push-ups", value: 100 }
   },
-  // Level 5: 10x10 with special tiles
-  {
-    width: 10,
-    height: 10,
-    grid: [
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'player', 'path', 'path', 'wall', 'path', 'teleport', 'path', 'path', 'wall'],
-      ['wall', 'path', 'wall', 'path', 'wall', 'path', 'wall', 'wall', 'path', 'wall'],
-      ['wall', 'path', 'path', 'path', 'path', 'path', 'path', 'speedboost', 'path', 'wall'],
-      ['wall', 'wall', 'wall', 'path', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'path', 'path', 'path', 'wall', 'path', 'path', 'path', 'path', 'wall'],
-      ['wall', 'path', 'wall', 'wall', 'wall', 'path', 'wall', 'wall', 'path', 'wall'],
-      ['wall', 'path', 'teleport', 'path', 'path', 'path', 'path', 'wall', 'exit', 'wall'],
-      ['wall', 'wall', 'wall', 'wall', 'path', 'wall', 'wall', 'wall', 'wall', 'wall'],
-      ['wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall', 'wall']
-    ],
-    enemies: [],
-    keys: 0,
-    teleports: [[1, 6], [7, 2]] // Paired teleport positions
+  "50-pullups": {
+    name: "Pull-up Pro",
+    description: "50 total pull-ups",
+    icon: "🎯",
+    condition: { type: "exercise-total", exercise: "pull-ups", value: 50 }
+  },
+  "points-1000": {
+    name: "Bronze Champion",
+    description: "Earn 1,000 points",
+    icon: "🥉",
+    condition: { type: "total-points", value: 1000 }
+  },
+  "points-5000": {
+    name: "Silver Champion",
+    description: "Earn 5,000 points",
+    icon: "🥈",
+    condition: { type: "total-points", value: 5000 }
+  },
+  "points-10000": {
+    name: "Gold Champion",
+    description: "Earn 10,000 points",
+    icon: "🥇",
+    condition: { type: "total-points", value: 10000 }
+  },
+  "variety-5": {
+    name: "Variety Master",
+    description: "Do 5 different exercises in one week",
+    icon: "🎨",
+    condition: { type: "variety-weekly", value: 5 }
+  },
+  "sessions-10": {
+    name: "Dedicated",
+    description: "Complete 10 workouts",
+    icon: "💪",
+    condition: { type: "session-count", value: 10 }
+  },
+  "sessions-50": {
+    name: "Committed",
+    description: "Complete 50 workouts",
+    icon: "🏆",
+    condition: { type: "session-count", value: 50 }
+  },
+  "sessions-100": {
+    name: "Legendary",
+    description: "Complete 100 workouts",
+    icon: "👑",
+    condition: { type: "session-count", value: 100 }
   }
-];
+};
+
+const DEFAULT_USER = {
+  name: "Athlete",
+  totalPoints: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  level: 1,
+  unlockedStickers: [],
+  joinedDate: new Date().toISOString(),
+  lastCheckIn: null
+};
+
+const DEFAULT_SETTINGS = {
+  soundMuted: false,
+  dailyGoal: 50,
+  weeklyGoal: 500,
+  theme: "dark"
+};
 
 // ========================================
-// MAZE GENERATOR CLASS
+// HELPER FUNCTIONS
 // ========================================
 
-class MazeGenerator {
-  static generateMaze(width, height, level) {
-    // Create grid filled with walls
-    const grid = Array(height).fill(null).map(() => Array(width).fill(TILE_TYPES.WALL));
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
 
-    // Recursive backtracker algorithm
-    const visited = Array(height).fill(null).map(() => Array(width).fill(false));
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
-    function carve(x, y) {
-      visited[y][x] = true;
-      grid[y][x] = TILE_TYPES.PATH;
+function calculateDayDifference(date1String, date2String) {
+  const d1 = new Date(date1String);
+  const d2 = new Date(date2String);
+  const diffTime = Math.abs(d2 - d1);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
 
-      const directions = [
-        [0, -2], [0, 2], [-2, 0], [2, 0]
-      ].sort(() => Math.random() - 0.5);
+function getWeekStart(date = new Date()) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day;
+  return new Date(d.setDate(diff));
+}
 
-      for (const [dx, dy] of directions) {
-        const nx = x + dx;
-        const ny = y + dy;
+// ========================================
+// CLASSES
+// ========================================
 
-        if (nx > 0 && nx < width - 1 && ny > 0 && ny < height - 1 && !visited[ny][nx]) {
-          grid[y + dy / 2][x + dx / 2] = TILE_TYPES.PATH;
-          carve(nx, ny);
-        }
-      }
-    }
-
-    // Start carving from position (1, 1)
-    carve(1, 1);
-
-    // Set player start and exit
-    grid[1][1] = TILE_TYPES.PLAYER;
-    grid[height - 2][width - 2] = TILE_TYPES.EXIT;
-
-    // Add keys in dead ends (for level 6+)
-    const numKeys = Math.min(Math.floor(level / 2), 3);
-    const deadEnds = [];
-
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        if (grid[y][x] === TILE_TYPES.PATH) {
-          const neighbors = [
-            grid[y - 1][x], grid[y + 1][x], grid[y][x - 1], grid[y][x + 1]
-          ].filter(cell => cell !== TILE_TYPES.WALL).length;
-
-          if (neighbors === 1) deadEnds.push([y, x]);
-        }
-      }
-    }
-
-    for (let i = 0; i < numKeys && deadEnds.length > 0; i++) {
-      const idx = Math.floor(Math.random() * deadEnds.length);
-      const [y, x] = deadEnds.splice(idx, 1)[0];
-      grid[y][x] = TILE_TYPES.KEY;
-    }
-
-    // Add enemies (for level 6+)
-    const numEnemies = Math.max(0, level - 5);
-    const enemies = [];
-
-    for (let i = 0; i < numEnemies; i++) {
-      let placed = false;
-      let attempts = 0;
-
-      while (!placed && attempts < 50) {
-        const x = Math.floor(Math.random() * (width - 2)) + 1;
-        const y = Math.floor(Math.random() * (height - 2)) + 1;
-
-        if (grid[y][x] === TILE_TYPES.PATH &&
-            Math.abs(x - 1) + Math.abs(y - 1) > 3) {
-          grid[y][x] = TILE_TYPES.ENEMY;
-          enemies.push({ x, y, path: this.generatePatrolPath(grid, x, y) });
-          placed = true;
-        }
-        attempts++;
-      }
-    }
-
-    return { grid, enemies, keys: numKeys };
+class SessionBuilder {
+  constructor() {
+    this.exercises = [];
+    this.startTime = null;
+    this.totalPoints = 0;
   }
 
-  static generatePatrolPath(grid, startX, startY) {
-    // Simple patrol: move in available directions
-    const path = [[startX, startY]];
-    let x = startX, y = startY;
+  start() {
+    this.startTime = new Date();
+  }
 
-    for (let i = 0; i < 4; i++) {
-      const directions = [
-        [0, -1], [0, 1], [-1, 0], [1, 0]
-      ].filter(([dx, dy]) => {
-        const nx = x + dx, ny = y + dy;
-        return grid[ny] && grid[ny][nx] && grid[ny][nx] !== TILE_TYPES.WALL;
+  addExercise(type, reps, points) {
+    this.exercises.push({ type, reps, points });
+    this.totalPoints += points;
+  }
+
+  removeExercise(index) {
+    if (index >= 0 && index < this.exercises.length) {
+      this.totalPoints -= this.exercises[index].points;
+      this.exercises.splice(index, 1);
+    }
+  }
+
+  calculateTotal() {
+    return this.totalPoints;
+  }
+
+  getDuration() {
+    if (!this.startTime) return 0;
+    return Math.floor((new Date() - this.startTime) / 1000);
+  }
+
+  build() {
+    return {
+      id: `session-${Date.now()}`,
+      date: new Date().toISOString(),
+      exercises: [...this.exercises],
+      totalPoints: this.totalPoints,
+      duration: this.getDuration(),
+      notes: ""
+    };
+  }
+}
+
+class StatsTracker {
+  static calculateStreak(sessions, today = new Date()) {
+    if (!sessions || sessions.length === 0) return 0;
+
+    // Sort sessions by date descending
+    const sortedSessions = [...sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Get unique workout dates
+    const workoutDates = [...new Set(sortedSessions.map(s => s.date.split('T')[0]))];
+
+    if (workoutDates.length === 0) return 0;
+
+    const todayStr = today.toISOString().split('T')[0];
+    let streak = 0;
+    let checkDate = new Date(todayStr);
+
+    for (let i = 0; i < workoutDates.length; i++) {
+      const workoutDateStr = workoutDates[i];
+      const daysDiff = calculateDayDifference(workoutDateStr, checkDate.toISOString().split('T')[0]);
+
+      if (daysDiff === 0) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (daysDiff === 1 && streak === 0) {
+        // If we haven't worked out today but did yesterday, count from yesterday
+        checkDate = new Date(workoutDateStr);
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  static getTodaysActivity(sessions) {
+    const today = new Date().toISOString().split('T')[0];
+    return sessions.filter(s => s.date.split('T')[0] === today);
+  }
+
+  static getWeeklyActivity(sessions) {
+    const weekStart = getWeekStart();
+    return sessions.filter(s => new Date(s.date) >= weekStart);
+  }
+
+  static getExerciseBreakdown(sessions) {
+    const breakdown = {};
+    sessions.forEach(session => {
+      session.exercises.forEach(exercise => {
+        if (!breakdown[exercise.type]) {
+          breakdown[exercise.type] = 0;
+        }
+        breakdown[exercise.type] += exercise.reps;
       });
-
-      if (directions.length > 0) {
-        const [dx, dy] = directions[Math.floor(Math.random() * directions.length)];
-        x += dx;
-        y += dy;
-        path.push([x, y]);
-      }
-    }
-
-    return path;
-  }
-}
-
-// ========================================
-// GAME STATE CLASS
-// ========================================
-
-class GameState {
-  constructor() {
-    this.currentLevel = 1;
-    this.maxLevelUnlocked = 1;
-    this.playerPos = { x: 1, y: 1 };
-    this.mazeGrid = [];
-    this.lives = INITIAL_LIVES;
-    this.keysCollected = 0;
-    this.keysRequired = 0;
-    this.timer = 0;
-    this.moves = 0;
-    this.enemies = [];
-    this.teleports = [];
-    this.isMoving = false;
-    this.speedBoostActive = false;
-    this.timerInterval = null;
-  }
-
-  loadLevel(levelNum) {
-    this.currentLevel = levelNum;
-    this.lives = INITIAL_LIVES;
-    this.keysCollected = 0;
-    this.timer = 0;
-    this.moves = 0;
-    this.isMoving = false;
-    this.speedBoostActive = false;
-
-    if (levelNum <= LEVELS.length) {
-      // Hand-crafted level
-      const level = LEVELS[levelNum - 1];
-      this.mazeGrid = level.grid.map(row => [...row]);
-      this.keysRequired = level.keys;
-      this.enemies = level.enemies.map(e => ({ ...e }));
-      this.teleports = level.teleports || [];
-
-      // Find player position
-      for (let y = 0; y < level.height; y++) {
-        for (let x = 0; x < level.width; x++) {
-          if (this.mazeGrid[y][x] === TILE_TYPES.PLAYER) {
-            this.playerPos = { x, y };
-          }
-        }
-      }
-    } else {
-      // Procedurally generated level
-      const size = Math.min(16, 10 + (levelNum - 5) * 2);
-      const generated = MazeGenerator.generateMaze(size, size, levelNum);
-      this.mazeGrid = generated.grid;
-      this.enemies = generated.enemies;
-      this.keysRequired = generated.keys;
-      this.playerPos = { x: 1, y: 1 };
-      this.teleports = [];
-    }
-  }
-
-  resetLevel() {
-    this.loadLevel(this.currentLevel);
-  }
-
-  movePlayer(direction) {
-    if (this.isMoving) return false;
-
-    const newX = this.playerPos.x + direction.dx;
-    const newY = this.playerPos.y + direction.dy;
-
-    const collision = this.checkCollision(newX, newY);
-
-    if (collision === TILE_TYPES.WALL) {
-      return false;
-    }
-
-    if (collision === TILE_TYPES.DOOR) {
-      if (this.keysCollected === 0) {
-        return false;
-      }
-      // Open door
-      this.mazeGrid[newY][newX] = TILE_TYPES.PATH;
-      this.keysCollected--;
-    }
-
-    // Clear old position
-    this.mazeGrid[this.playerPos.y][this.playerPos.x] = TILE_TYPES.PATH;
-
-    // Move player
-    this.playerPos.x = newX;
-    this.playerPos.y = newY;
-    this.moves++;
-
-    // Handle special tiles
-    const tileType = this.mazeGrid[newY][newX];
-
-    if (tileType === TILE_TYPES.KEY) {
-      this.keysCollected++;
-    } else if (tileType === TILE_TYPES.SPEEDBOOST) {
-      this.speedBoostActive = true;
-      setTimeout(() => { this.speedBoostActive = false; }, 3000);
-    } else if (tileType === TILE_TYPES.TELEPORT) {
-      this.handleTeleport();
-    }
-
-    // Update grid
-    this.mazeGrid[newY][newX] = TILE_TYPES.PLAYER;
-
-    return true;
-  }
-
-  handleTeleport() {
-    if (this.teleports.length < 2) return;
-
-    const [pos1, pos2] = this.teleports;
-    const [y1, x1] = pos1;
-    const [y2, x2] = pos2;
-
-    // Teleport to the other pad
-    if (this.playerPos.x === x1 && this.playerPos.y === y1) {
-      this.mazeGrid[y1][x1] = TILE_TYPES.TELEPORT;
-      this.playerPos.x = x2;
-      this.playerPos.y = y2;
-      this.mazeGrid[y2][x2] = TILE_TYPES.PLAYER;
-    } else if (this.playerPos.x === x2 && this.playerPos.y === y2) {
-      this.mazeGrid[y2][x2] = TILE_TYPES.TELEPORT;
-      this.playerPos.x = x1;
-      this.playerPos.y = y1;
-      this.mazeGrid[y1][x1] = TILE_TYPES.PLAYER;
-    }
-  }
-
-  checkCollision(x, y) {
-    if (y < 0 || y >= this.mazeGrid.length || x < 0 || x >= this.mazeGrid[0].length) {
-      return TILE_TYPES.WALL;
-    }
-    return this.mazeGrid[y][x];
-  }
-
-  checkWin() {
-    const tile = this.mazeGrid[this.playerPos.y][this.playerPos.x];
-    return tile === TILE_TYPES.EXIT ||
-           this.checkCollision(this.playerPos.x, this.playerPos.y) === TILE_TYPES.EXIT;
-  }
-
-  loseLife() {
-    this.lives--;
-    if (this.lives > 0) {
-      this.resetPlayerPosition();
-    }
-    return this.lives;
-  }
-
-  resetPlayerPosition() {
-    // Find original start position
-    for (let y = 0; y < this.mazeGrid.length; y++) {
-      for (let x = 0; x < this.mazeGrid[0].length; x++) {
-        if (this.mazeGrid[y][x] === TILE_TYPES.PLAYER) {
-          this.mazeGrid[y][x] = TILE_TYPES.PATH;
-        }
-      }
-    }
-
-    // Reset to start (typically 1,1)
-    if (this.currentLevel <= LEVELS.length) {
-      const level = LEVELS[this.currentLevel - 1];
-      for (let y = 0; y < level.height; y++) {
-        for (let x = 0; x < level.width; x++) {
-          if (level.grid[y][x] === TILE_TYPES.PLAYER) {
-            this.playerPos = { x, y };
-            this.mazeGrid[y][x] = TILE_TYPES.PLAYER;
-            return;
-          }
-        }
-      }
-    } else {
-      this.playerPos = { x: 1, y: 1 };
-      this.mazeGrid[1][1] = TILE_TYPES.PLAYER;
-    }
-  }
-
-  startTimer() {
-    if (this.timerInterval) return;
-    this.timerInterval = setInterval(() => {
-      this.timer++;
-    }, 1000);
-  }
-
-  stopTimer() {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = null;
-    }
-  }
-}
-
-// ========================================
-// RENDERER CLASS
-// ========================================
-
-class Renderer {
-  constructor() {
-    this.mazeContainer = document.getElementById('mazeContainer');
-    this.screens = {
-      start: document.getElementById('startScreen'),
-      game: document.getElementById('gameScreen'),
-      victory: document.getElementById('victoryScreen')
-    };
-    this.overlays = {
-      pause: document.getElementById('pauseOverlay'),
-      gameOver: document.getElementById('gameOverOverlay')
-    };
-  }
-
-  renderMaze(grid) {
-    this.mazeContainer.innerHTML = '';
-    const height = grid.length;
-    const width = grid[0].length;
-
-    this.mazeContainer.style.gridTemplateColumns = `repeat(${width}, 1fr)`;
-    this.mazeContainer.style.gridTemplateRows = `repeat(${height}, 1fr)`;
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const cell = document.createElement('div');
-        cell.className = `cell ${grid[y][x]}`;
-        cell.dataset.x = x;
-        cell.dataset.y = y;
-        this.mazeContainer.appendChild(cell);
-      }
-    }
-  }
-
-  updateMaze(grid) {
-    const cells = this.mazeContainer.querySelectorAll('.cell');
-    cells.forEach((cell, index) => {
-      const x = parseInt(cell.dataset.x);
-      const y = parseInt(cell.dataset.y);
-      const tileType = grid[y][x];
-      cell.className = `cell ${tileType}`;
     });
+    return breakdown;
   }
 
-  renderHUD(state) {
-    document.getElementById('levelNum').textContent = state.currentLevel;
-    document.getElementById('timer').textContent = this.formatTime(state.timer);
-    document.getElementById('moves').textContent = state.moves;
-    document.getElementById('keys').textContent = state.keysCollected;
+  static getPersonalRecords(sessions) {
+    const records = {};
+    sessions.forEach(session => {
+      session.exercises.forEach(exercise => {
+        if (!records[exercise.type] || exercise.reps > records[exercise.type]) {
+          records[exercise.type] = exercise.reps;
+        }
+      });
+    });
+    return records;
+  }
+}
 
-    // Lives display
-    const livesDisplay = document.getElementById('livesDisplay');
-    livesDisplay.innerHTML = '❤️'.repeat(state.lives) + '🖤'.repeat(INITIAL_LIVES - state.lives);
-
-    // Show/hide keys display
-    document.getElementById('keysDisplay').style.display =
-      state.keysRequired > 0 ? 'inline' : 'none';
+class AchievementEngine {
+  constructor(stickers, user, sessions) {
+    this.stickers = stickers;
+    this.user = user;
+    this.sessions = sessions;
   }
 
-  formatTime(seconds) {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
-    return `${mins}:${secs}`;
+  checkAllConditions() {
+    const newlyUnlocked = [];
+
+    Object.keys(this.stickers).forEach(stickerId => {
+      if (!this.user.unlockedStickers.includes(stickerId)) {
+        if (this.checkCondition(this.stickers[stickerId])) {
+          newlyUnlocked.push(stickerId);
+          this.unlockSticker(stickerId);
+        }
+      }
+    });
+
+    return newlyUnlocked;
+  }
+
+  checkCondition(sticker) {
+    const { condition } = sticker;
+
+    switch (condition.type) {
+      case 'session-count':
+        return this.sessions.length >= condition.value;
+
+      case 'streak':
+        return this.user.currentStreak >= condition.value;
+
+      case 'exercise-total': {
+        const breakdown = StatsTracker.getExerciseBreakdown(this.sessions);
+        return (breakdown[condition.exercise] || 0) >= condition.value;
+      }
+
+      case 'total-points':
+        return this.user.totalPoints >= condition.value;
+
+      case 'variety-weekly': {
+        const weekSessions = StatsTracker.getWeeklyActivity(this.sessions);
+        const uniqueExercises = new Set();
+        weekSessions.forEach(session => {
+          session.exercises.forEach(ex => uniqueExercises.add(ex.type));
+        });
+        return uniqueExercises.size >= condition.value;
+      }
+
+      default:
+        return false;
+    }
+  }
+
+  unlockSticker(stickerId) {
+    if (!this.user.unlockedStickers.includes(stickerId)) {
+      this.user.unlockedStickers.push(stickerId);
+    }
+  }
+
+  getProgress(stickerId) {
+    const sticker = this.stickers[stickerId];
+    if (!sticker) return 0;
+
+    const { condition } = sticker;
+    let current = 0;
+
+    switch (condition.type) {
+      case 'session-count':
+        current = this.sessions.length;
+        break;
+
+      case 'streak':
+        current = this.user.currentStreak;
+        break;
+
+      case 'exercise-total': {
+        const breakdown = StatsTracker.getExerciseBreakdown(this.sessions);
+        current = breakdown[condition.exercise] || 0;
+        break;
+      }
+
+      case 'total-points':
+        current = this.user.totalPoints;
+        break;
+
+      case 'variety-weekly': {
+        const weekSessions = StatsTracker.getWeeklyActivity(this.sessions);
+        const uniqueExercises = new Set();
+        weekSessions.forEach(session => {
+          session.exercises.forEach(ex => uniqueExercises.add(ex.type));
+        });
+        current = uniqueExercises.size;
+        break;
+      }
+    }
+
+    return Math.min(100, Math.floor((current / condition.value) * 100));
+  }
+
+  getNextToUnlock(limit = 3) {
+    const locked = Object.keys(this.stickers)
+      .filter(id => !this.user.unlockedStickers.includes(id))
+      .map(id => ({
+        id,
+        ...this.stickers[id],
+        progress: this.getProgress(id)
+      }))
+      .sort((a, b) => b.progress - a.progress);
+
+    return locked.slice(0, limit);
+  }
+}
+
+class AppState {
+  constructor() {
+    this.user = null;
+    this.sessions = [];
+    this.exercises = {};
+    this.friends = [];
+    this.stickers = {};
+    this.settings = {};
+    this.currentSession = null;
+  }
+
+  init() {
+    this.loadUserProfile();
+    this.loadSessions();
+    this.loadExercises();
+    this.loadStickers();
+    this.loadFriends();
+    this.loadSettings();
+  }
+
+  loadUserProfile() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.USER);
+      this.user = stored ? JSON.parse(stored) : { ...DEFAULT_USER };
+    } catch (e) {
+      console.error('Failed to load user profile:', e);
+      this.user = { ...DEFAULT_USER };
+    }
+  }
+
+  saveUserProfile() {
+    try {
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(this.user));
+    } catch (e) {
+      console.error('Failed to save user profile:', e);
+    }
+  }
+
+  loadSessions() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.SESSIONS);
+      this.sessions = stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error('Failed to load sessions:', e);
+      this.sessions = [];
+    }
+  }
+
+  saveSessions() {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(this.sessions));
+    } catch (e) {
+      console.error('Failed to save sessions:', e);
+    }
+  }
+
+  loadExercises() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.EXERCISES);
+      this.exercises = stored ? JSON.parse(stored) : { ...DEFAULT_EXERCISES };
+    } catch (e) {
+      console.error('Failed to load exercises:', e);
+      this.exercises = { ...DEFAULT_EXERCISES };
+    }
+  }
+
+  loadStickers() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.STICKERS);
+      this.stickers = stored ? JSON.parse(stored) : { ...DEFAULT_STICKERS };
+    } catch (e) {
+      console.error('Failed to load stickers:', e);
+      this.stickers = { ...DEFAULT_STICKERS };
+    }
+  }
+
+  loadFriends() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.FRIENDS);
+      this.friends = stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error('Failed to load friends:', e);
+      this.friends = [];
+    }
+  }
+
+  saveFriends() {
+    try {
+      localStorage.setItem(STORAGE_KEYS.FRIENDS, JSON.stringify(this.friends));
+    } catch (e) {
+      console.error('Failed to save friends:', e);
+    }
+  }
+
+  loadSettings() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      this.settings = stored ? JSON.parse(stored) : { ...DEFAULT_SETTINGS };
+    } catch (e) {
+      console.error('Failed to load settings:', e);
+      this.settings = { ...DEFAULT_SETTINGS };
+    }
+  }
+
+  saveSettings() {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+    }
+  }
+
+  startSession() {
+    this.currentSession = new SessionBuilder();
+    this.currentSession.start();
+  }
+
+  addExerciseToSession(type, reps) {
+    if (!this.currentSession) {
+      this.startSession();
+    }
+
+    const exercise = this.exercises[type];
+    if (!exercise) return;
+
+    const points = this.calculatePoints(type, reps);
+    this.currentSession.addExercise(type, reps, points);
+  }
+
+  completeSession() {
+    if (!this.currentSession || this.currentSession.exercises.length === 0) {
+      return null;
+    }
+
+    const session = this.currentSession.build();
+    this.sessions.push(session);
+    this.saveSessions();
+
+    // Update user stats
+    this.user.totalPoints += session.totalPoints;
+    this.updateStreak();
+    this.user.level = this.calculateLevel(this.user.totalPoints);
+
+    // Check for unlocked stickers
+    const achievementEngine = new AchievementEngine(this.stickers, this.user, this.sessions);
+    const newStickers = achievementEngine.checkAllConditions();
+
+    this.saveUserProfile();
+
+    // Reset current session
+    this.currentSession = null;
+
+    return { session, newStickers };
+  }
+
+  cancelSession() {
+    this.currentSession = null;
+  }
+
+  calculatePoints(exerciseType, reps) {
+    const exercise = this.exercises[exerciseType];
+    if (!exercise) return 0;
+
+    let points = reps * exercise.pointsPerRep;
+
+    // Bonus for first workout today
+    const todaysSessions = StatsTracker.getTodaysActivity(this.sessions);
+    if (todaysSessions.length === 0 && (!this.currentSession || this.currentSession.exercises.length === 0)) {
+      points += 10;
+    }
+
+    // Streak bonus
+    if (this.user.currentStreak > 0) {
+      const streakBonus = Math.min(this.user.currentStreak * 5, 50);
+      points += streakBonus;
+    }
+
+    return points;
+  }
+
+  updateStreak() {
+    const today = new Date().toISOString().split('T')[0];
+    const lastCheckIn = this.user.lastCheckIn ? this.user.lastCheckIn.split('T')[0] : null;
+
+    if (!lastCheckIn) {
+      this.user.currentStreak = 1;
+    } else {
+      const daysSinceLastCheckIn = calculateDayDifference(lastCheckIn, today);
+
+      if (daysSinceLastCheckIn === 0) {
+        // Same day, no change to streak
+      } else if (daysSinceLastCheckIn === 1) {
+        // Next day, increment streak
+        this.user.currentStreak += 1;
+      } else {
+        // Missed days, reset streak
+        this.user.currentStreak = 1;
+      }
+    }
+
+    this.user.lastCheckIn = new Date().toISOString();
+    this.user.longestStreak = Math.max(this.user.longestStreak, this.user.currentStreak);
+  }
+
+  checkStickerUnlocks() {
+    const achievementEngine = new AchievementEngine(this.stickers, this.user, this.sessions);
+    return achievementEngine.checkAllConditions();
+  }
+
+  calculateLevel(totalPoints) {
+    return Math.floor(Math.sqrt(totalPoints / 50)) + 1;
+  }
+
+  getTodaysPoints() {
+    const todaysSessions = StatsTracker.getTodaysActivity(this.sessions);
+    return todaysSessions.reduce((sum, session) => sum + session.totalPoints, 0);
+  }
+
+  getWeeklyPoints() {
+    const weeklySessions = StatsTracker.getWeeklyActivity(this.sessions);
+    return weeklySessions.reduce((sum, session) => sum + session.totalPoints, 0);
+  }
+
+  getExerciseTotal(exerciseType) {
+    const breakdown = StatsTracker.getExerciseBreakdown(this.sessions);
+    return breakdown[exerciseType] || 0;
+  }
+
+  getPersonalRecords() {
+    return StatsTracker.getPersonalRecords(this.sessions);
+  }
+}
+
+class ScreenManager {
+  constructor() {
+    this.screens = {
+      home: document.getElementById('homeScreen'),
+      logger: document.getElementById('loggerScreen'),
+      profile: document.getElementById('profileScreen'),
+      friends: document.getElementById('friendsScreen'),
+      history: document.getElementById('historyScreen')
+    };
+
+    this.overlays = {
+      success: document.getElementById('successOverlay'),
+      sticker: document.getElementById('stickerOverlay'),
+      addFriend: document.getElementById('addFriendOverlay'),
+      settings: document.getElementById('settingsOverlay')
+    };
+
+    this.currentScreen = 'home';
   }
 
   showScreen(name) {
-    Object.values(this.screens).forEach(screen => screen.classList.add('hidden'));
-    Object.values(this.overlays).forEach(overlay => overlay.classList.add('hidden'));
-
+    this.hideAllScreens();
     if (this.screens[name]) {
       this.screens[name].classList.remove('hidden');
+      this.currentScreen = name;
+      this.updateNavigation(name);
     }
+  }
+
+  hideAllScreens() {
+    Object.values(this.screens).forEach(screen => screen.classList.add('hidden'));
   }
 
   showOverlay(name) {
@@ -509,541 +655,1011 @@ class Renderer {
     }
   }
 
-  renderLevelGrid(maxLevel) {
-    const levelGrid = document.getElementById('levelGrid');
-    levelGrid.innerHTML = '';
-
-    const totalLevels = Math.max(maxLevel + 1, 10);
-
-    for (let i = 1; i <= totalLevels; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'level-btn';
-      btn.textContent = i;
-      btn.dataset.level = i;
-
-      if (i > maxLevel) {
-        btn.classList.add('locked');
-        btn.disabled = true;
+  updateNavigation(screenName) {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      if (btn.dataset.screen === screenName) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
       }
+    });
+  }
 
-      levelGrid.appendChild(btn);
+  updateStreakDisplay(streak) {
+    const streakCount = document.getElementById('streakCount');
+    if (streakCount) {
+      streakCount.textContent = streak;
     }
   }
 
-  showVictoryScreen(state, bestTime) {
-    document.getElementById('finalTime').textContent = this.formatTime(state.timer);
-    document.getElementById('finalMoves').textContent = state.moves;
-    document.getElementById('bestTime').textContent =
-      bestTime ? this.formatTime(bestTime) : this.formatTime(state.timer);
+  updateProgressBar(elementId, current, goal) {
+    const progressBar = document.getElementById(elementId);
+    const progressText = document.getElementById(elementId + 'Text');
 
-    this.showScreen('victory');
+    if (progressBar) {
+      const percentage = Math.min(100, Math.floor((current / goal) * 100));
+      progressBar.style.width = percentage + '%';
+
+      if (progressText) {
+        progressText.textContent = `${current}/${goal}`;
+      }
+    }
   }
 
-  playAnimation(type, element) {
-    if (type === 'shake') {
-      this.mazeContainer.classList.add('shake');
-      setTimeout(() => this.mazeContainer.classList.remove('shake'), 300);
-    } else if (type === 'flash') {
-      this.mazeContainer.classList.add('flash-red');
-      setTimeout(() => this.mazeContainer.classList.remove('flash-red'), 300);
+  renderStickerGrid(stickers, unlockedIds) {
+    const grid = document.getElementById('stickerGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+
+    Object.keys(stickers).forEach(id => {
+      const sticker = stickers[id];
+      const isUnlocked = unlockedIds.includes(id);
+
+      const card = document.createElement('div');
+      card.className = `sticker-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+      card.dataset.stickerId = id;
+
+      const icon = document.createElement('div');
+      icon.className = 'sticker-icon';
+      icon.textContent = sticker.icon;
+
+      const name = document.createElement('div');
+      name.className = 'sticker-name';
+      name.textContent = sticker.name;
+
+      if (!isUnlocked) {
+        const lock = document.createElement('span');
+        lock.className = 'sticker-lock';
+        lock.textContent = '🔒';
+        card.appendChild(lock);
+      }
+
+      card.appendChild(icon);
+      card.appendChild(name);
+      grid.appendChild(card);
+    });
+  }
+
+  renderLeaderboard(friends, currentUser, sortBy = 'points') {
+    const leaderboard = document.getElementById('leaderboard');
+    const emptyState = document.getElementById('friendsEmptyState');
+
+    if (!leaderboard) return;
+
+    if (friends.length === 0) {
+      leaderboard.innerHTML = '';
+      if (emptyState) emptyState.classList.remove('hidden');
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    // Combine friends and current user
+    const allUsers = [
+      ...friends,
+      {
+        id: 'current-user',
+        name: currentUser.name,
+        totalPoints: currentUser.totalPoints,
+        currentStreak: currentUser.currentStreak,
+        level: currentUser.level,
+        isCurrentUser: true
+      }
+    ];
+
+    // Sort by selected criteria
+    allUsers.sort((a, b) => {
+      if (sortBy === 'points') {
+        return b.totalPoints - a.totalPoints;
+      } else {
+        return b.currentStreak - a.currentStreak;
+      }
+    });
+
+    leaderboard.innerHTML = '';
+
+    allUsers.forEach((user, index) => {
+      const card = document.createElement('div');
+      card.className = `friend-card ${user.isCurrentUser ? 'current-user' : ''}`;
+
+      const rank = document.createElement('div');
+      rank.className = 'friend-rank';
+      if (index === 0) rank.textContent = '🥇';
+      else if (index === 1) rank.textContent = '🥈';
+      else if (index === 2) rank.textContent = '🥉';
+      else rank.textContent = index + 1;
+
+      const info = document.createElement('div');
+      info.className = 'friend-info';
+
+      const name = document.createElement('div');
+      name.className = 'friend-name';
+      name.textContent = user.name + (user.isCurrentUser ? ' (You)' : '');
+
+      const stats = document.createElement('div');
+      stats.className = 'friend-stats';
+      stats.textContent = `Level ${user.level} • ${user.currentStreak} day streak`;
+
+      info.appendChild(name);
+      info.appendChild(stats);
+
+      const score = document.createElement('div');
+      score.className = 'friend-score';
+      score.textContent = sortBy === 'points' ? user.totalPoints : user.currentStreak;
+
+      card.appendChild(rank);
+      card.appendChild(info);
+      card.appendChild(score);
+
+      leaderboard.appendChild(card);
+    });
+  }
+
+  showMotivationalMessage(message) {
+    const messageEl = document.getElementById('motivationalMessage');
+    if (messageEl) {
+      messageEl.textContent = message;
     }
   }
 }
 
-// ========================================
-// INPUT HANDLER CLASS
-// ========================================
-
-class InputHandler {
-  constructor(onInput) {
-    this.onInput = onInput;
-    this.touchStart = null;
-    this.inputQueue = [];
-    this.setupControls();
+class AnimationController {
+  celebrateWorkout(element) {
+    element.classList.add('celebrate');
+    setTimeout(() => element.classList.remove('celebrate'), 600);
   }
 
-  setupControls() {
-    // Keyboard
-    document.addEventListener('keydown', (e) => {
-      const keyMap = {
-        'ArrowUp': DIRECTIONS.UP,
-        'ArrowDown': DIRECTIONS.DOWN,
-        'ArrowLeft': DIRECTIONS.LEFT,
-        'ArrowRight': DIRECTIONS.RIGHT,
-        'w': DIRECTIONS.UP,
-        'W': DIRECTIONS.UP,
-        's': DIRECTIONS.DOWN,
-        'S': DIRECTIONS.DOWN,
-        'a': DIRECTIONS.LEFT,
-        'A': DIRECTIONS.LEFT,
-        'd': DIRECTIONS.RIGHT,
-        'D': DIRECTIONS.RIGHT
-      };
+  celebrateStickerUnlock(element) {
+    element.classList.add('celebrate');
+    setTimeout(() => element.classList.remove('celebrate'), 600);
+  }
 
-      if (keyMap[e.key]) {
-        e.preventDefault();
-        this.queueInput(keyMap[e.key]);
+  countUpPoints(element, from, to, duration = 500) {
+    const start = Date.now();
+    const range = to - from;
+
+    const update = () => {
+      const now = Date.now();
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+
+      const current = Math.floor(from + range * progress);
+      element.textContent = current;
+
+      if (progress < 1) {
+        requestAnimationFrame(update);
       }
-    });
+    };
 
-    // D-Pad buttons
-    document.querySelectorAll('.dpad-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const dirName = btn.dataset.direction;
-        const direction = Object.values(DIRECTIONS).find(d => d.name === dirName);
-        if (direction) this.queueInput(direction);
-      });
+    requestAnimationFrame(update);
+  }
 
-      // Touch events for mobile
-      btn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        btn.style.backgroundColor = '#2196f3';
-      });
+  pulseStreak(element) {
+    element.style.animation = 'none';
+    setTimeout(() => {
+      element.style.animation = 'pulse 2s ease-in-out infinite';
+    }, 10);
+  }
 
-      btn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        btn.style.backgroundColor = '';
-        const dirName = btn.dataset.direction;
-        const direction = Object.values(DIRECTIONS).find(d => d.name === dirName);
-        if (direction) this.queueInput(direction);
-      });
-    });
+  showConfetti() {
+    const colors = ['#4a9eff', '#6eb5ff', '#2196f3', '#1976d2', '#ffd700', '#ff6b6b'];
 
-    // Swipe detection
-    const mazeWrapper = document.querySelector('.maze-wrapper');
-    if (mazeWrapper) {
-      mazeWrapper.addEventListener('touchstart', (e) => {
-        this.touchStart = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY
-        };
-      });
+    for (let i = 0; i < 50; i++) {
+      setTimeout(() => {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = Math.random() * 0.5 + 's';
+        document.body.appendChild(piece);
 
-      mazeWrapper.addEventListener('touchend', (e) => {
-        if (!this.touchStart) return;
-
-        const touchEnd = {
-          x: e.changedTouches[0].clientX,
-          y: e.changedTouches[0].clientY
-        };
-
-        const dx = touchEnd.x - this.touchStart.x;
-        const dy = touchEnd.y - this.touchStart.y;
-        const absDx = Math.abs(dx);
-        const absDy = Math.abs(dy);
-
-        if (absDx > 30 || absDy > 30) {
-          if (absDx > absDy) {
-            this.queueInput(dx > 0 ? DIRECTIONS.RIGHT : DIRECTIONS.LEFT);
-          } else {
-            this.queueInput(dy > 0 ? DIRECTIONS.DOWN : DIRECTIONS.UP);
-          }
-        }
-
-        this.touchStart = null;
-      });
+        setTimeout(() => piece.remove(), 3000);
+      }, i * 30);
     }
   }
 
-  queueInput(direction) {
-    this.onInput(direction);
+  shakeError(element) {
+    element.classList.add('shake');
+    setTimeout(() => element.classList.remove('shake'), 300);
   }
 }
-
-// ========================================
-// SOUND SYSTEM
-// ========================================
 
 class SoundSystem {
   constructor() {
     this.audioContext = null;
-    this.muted = this.loadMuteSetting();
-    this.initAudio();
-  }
+    this.muted = false;
 
-  initAudio() {
-    try {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    } catch (e) {
-      console.warn('Web Audio API not supported');
-    }
+    // Initialize audio context on user interaction
+    document.addEventListener('click', () => {
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }, { once: true });
   }
 
   playSound(type) {
     if (this.muted || !this.audioContext) return;
 
-    const osc = this.audioContext.createOscillator();
-    const gainNode = this.audioContext.createGain();
-
-    osc.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
-
-    switch (type) {
-      case 'move':
-        osc.frequency.value = 300;
-        gainNode.gain.value = 0.1;
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.05);
-        break;
-      case 'collect':
-        osc.frequency.value = 600;
-        gainNode.gain.value = 0.15;
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.1);
-        break;
-      case 'damage':
-        osc.frequency.value = 150;
-        osc.type = 'square';
-        gainNode.gain.value = 0.2;
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.2);
-        break;
-      case 'win':
-        osc.frequency.value = 800;
-        gainNode.gain.value = 0.2;
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.3);
-        break;
-      case 'bump':
-        osc.frequency.value = 100;
-        osc.type = 'square';
-        gainNode.gain.value = 0.05;
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.1);
-        break;
-    }
-  }
-
-  toggleMute() {
-    this.muted = !this.muted;
-    this.saveMuteSetting();
-    return this.muted;
-  }
-
-  loadMuteSetting() {
     try {
-      const settings = JSON.parse(localStorage.getItem('mazeEscapeSettings') || '{}');
-      return settings.soundMuted || false;
-    } catch {
-      return false;
-    }
-  }
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
 
-  saveMuteSetting() {
-    try {
-      const settings = JSON.parse(localStorage.getItem('mazeEscapeSettings') || '{}');
-      settings.soundMuted = this.muted;
-      localStorage.setItem('mazeEscapeSettings', JSON.stringify(settings));
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      switch (type) {
+        case 'log':
+          oscillator.frequency.value = 400;
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + 0.1);
+          break;
+
+        case 'unlock':
+          oscillator.frequency.value = 800;
+          oscillator.frequency.exponentialRampToValueAtTime(1200, this.audioContext.currentTime + 0.3);
+          gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + 0.3);
+          break;
+
+        case 'streak':
+          oscillator.frequency.value = 600;
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + 0.15);
+          break;
+
+        case 'level-up':
+          oscillator.frequency.value = 600;
+          oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime + 0.15);
+          oscillator.frequency.setValueAtTime(1000, this.audioContext.currentTime + 0.3);
+          gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + 0.5);
+          break;
+
+        default:
+          oscillator.frequency.value = 440;
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + 0.1);
+      }
     } catch (e) {
-      console.warn('Could not save settings');
+      console.error('Sound playback failed:', e);
     }
+  }
+
+  setMuted(muted) {
+    this.muted = muted;
+  }
+
+  isMuted() {
+    return this.muted;
   }
 }
 
 // ========================================
-// GAME CONTROLLER
+// MAIN APP
 // ========================================
 
-class Game {
+class App {
   constructor() {
-    this.state = new GameState();
-    this.renderer = new Renderer();
+    this.state = new AppState();
+    this.screenManager = new ScreenManager();
     this.sound = new SoundSystem();
-    this.inputHandler = new InputHandler((dir) => this.handleInput(dir));
-    this.animationFrame = null;
-    this.lastEnemyUpdate = 0;
-    this.enemyIndex = 0;
+    this.animator = new AnimationController();
 
-    this.setupEventListeners();
-    this.loadProgress();
+    // Logger state
+    this.currentExerciseType = null;
+    this.currentReps = 0;
+    this.sessionTimer = null;
+    this.sessionDuration = 0;
+    this.timerRunning = false;
+
     this.init();
   }
 
   init() {
-    this.renderer.renderLevelGrid(this.state.maxLevelUnlocked);
-    this.updateSoundIcon();
-    this.renderer.showScreen('start');
+    this.state.init();
+    this.sound.setMuted(this.state.settings.soundMuted);
+    this.setupEventListeners();
+    this.updateDashboard();
+    this.screenManager.showScreen('home');
   }
 
   setupEventListeners() {
-    // Start screen
-    document.getElementById('continueBtn').addEventListener('click', () => {
-      this.startLevel(this.state.currentLevel);
+    // Navigation
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.navigateToScreen(btn.dataset.screen);
+      });
     });
 
-    document.getElementById('settingsBtn').addEventListener('click', () => {
-      this.sound.toggleMute();
-      this.updateSoundIcon();
-    });
-
-    document.getElementById('levelGrid').addEventListener('click', (e) => {
-      if (e.target.classList.contains('level-btn') && !e.target.classList.contains('locked')) {
-        const level = parseInt(e.target.dataset.level);
-        this.startLevel(level);
-      }
-    });
-
-    // Game screen
-    document.getElementById('pauseBtn').addEventListener('click', () => {
-      this.pauseGame();
-    });
-
-    // Pause overlay
-    document.getElementById('resumeBtn').addEventListener('click', () => {
-      this.resumeGame();
-    });
-
-    document.getElementById('restartBtn').addEventListener('click', () => {
-      this.renderer.hideOverlay('pause');
-      this.startLevel(this.state.currentLevel);
-    });
-
-    document.getElementById('quitBtn').addEventListener('click', () => {
-      this.quitToMenu();
-    });
-
-    // Victory screen
-    document.getElementById('replayBtn').addEventListener('click', () => {
-      this.startLevel(this.state.currentLevel);
-    });
-
-    document.getElementById('nextLevelBtn').addEventListener('click', () => {
-      this.startLevel(this.state.currentLevel + 1);
-    });
-
-    document.getElementById('levelSelectBtn').addEventListener('click', () => {
-      this.quitToMenu();
-    });
-
-    // Game over overlay
-    document.getElementById('retryBtn').addEventListener('click', () => {
-      this.renderer.hideOverlay('gameOver');
-      this.startLevel(this.state.currentLevel);
-    });
-
-    document.getElementById('quitGameOverBtn').addEventListener('click', () => {
-      this.quitToMenu();
-    });
-
-    // Page visibility (pause when tab hidden)
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.renderer.screens.game.classList.contains('hidden') === false) {
-        this.pauseGame();
-      }
-    });
-  }
-
-  startLevel(levelNum) {
-    this.state.loadLevel(levelNum);
-    this.renderer.showScreen('game');
-    this.renderer.renderMaze(this.state.mazeGrid);
-    this.renderer.renderHUD(this.state);
-
-    if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
+    // Home screen
+    const logWorkoutBtn = document.getElementById('logWorkoutBtn');
+    if (logWorkoutBtn) {
+      logWorkoutBtn.addEventListener('click', () => this.handleQuickLog());
     }
-    this.gameLoop();
-  }
 
-  handleInput(direction) {
-    if (this.state.isMoving) return;
-
-    const moved = this.state.movePlayer(direction);
-
-    if (moved) {
-      this.state.isMoving = true;
-
-      if (this.state.moves === 1) {
-        this.state.startTimer();
-      }
-
-      this.renderer.updateMaze(this.state.mazeGrid);
-      this.renderer.renderHUD(this.state);
-      this.sound.playSound('move');
-
-      setTimeout(() => {
-        this.state.isMoving = false;
-
-        // Check for enemy collision
-        if (this.checkEnemyCollision()) {
-          this.handleEnemyCollision();
+    // Logger screen
+    const backBtn = document.getElementById('backBtn');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        if (this.state.currentSession && this.state.currentSession.exercises.length > 0) {
+          if (confirm('Discard current session?')) {
+            this.state.cancelSession();
+            this.navigateToScreen('home');
+          }
+        } else {
+          this.navigateToScreen('home');
         }
-
-        // Check win condition
-        if (this.checkWinCondition()) {
-          this.handleWin();
-        }
-      }, this.state.speedBoostActive ? MOVE_ANIMATION_MS / 2 : MOVE_ANIMATION_MS);
-    } else {
-      this.sound.playSound('bump');
-      this.renderer.playAnimation('shake');
-    }
-  }
-
-  checkEnemyCollision() {
-    return this.state.enemies.some(enemy =>
-      enemy.x === this.state.playerPos.x && enemy.y === this.state.playerPos.y
-    );
-  }
-
-  handleEnemyCollision() {
-    this.sound.playSound('damage');
-    this.renderer.playAnimation('flash');
-
-    const lives = this.state.loseLife();
-    this.renderer.renderHUD(this.state);
-
-    if (lives === 0) {
-      this.state.stopTimer();
-      setTimeout(() => {
-        this.renderer.showOverlay('gameOver');
-      }, 500);
-    } else {
-      this.renderer.updateMaze(this.state.mazeGrid);
-    }
-  }
-
-  checkWinCondition() {
-    const atExit = this.state.checkCollision(this.state.playerPos.x, this.state.playerPos.y) === TILE_TYPES.EXIT;
-    return atExit;
-  }
-
-  handleWin() {
-    this.state.stopTimer();
-    this.sound.playSound('win');
-
-    // Update progress
-    if (this.state.currentLevel >= this.state.maxLevelUnlocked) {
-      this.state.maxLevelUnlocked = this.state.currentLevel + 1;
+      });
     }
 
-    const bestTime = this.saveLevelStats();
-    this.saveProgress();
-
-    setTimeout(() => {
-      this.renderer.showVictoryScreen(this.state, bestTime);
-    }, 500);
-  }
-
-  pauseGame() {
-    this.state.stopTimer();
-    this.renderer.showOverlay('pause');
-  }
-
-  resumeGame() {
-    this.renderer.hideOverlay('pause');
-    if (this.state.moves > 0) {
-      this.state.startTimer();
-    }
-  }
-
-  quitToMenu() {
-    this.state.stopTimer();
-    if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
-    }
-    this.renderer.hideOverlay('pause');
-    this.renderer.hideOverlay('gameOver');
-    this.renderer.renderLevelGrid(this.state.maxLevelUnlocked);
-    this.renderer.showScreen('start');
-  }
-
-  gameLoop() {
-    // Update enemies (for level 6+)
-    const now = Date.now();
-    if (this.state.enemies.length > 0 && now - this.lastEnemyUpdate > ENEMY_MOVE_INTERVAL) {
-      this.updateEnemies();
-      this.lastEnemyUpdate = now;
+    const completeSessionBtn = document.getElementById('completeSessionBtn');
+    if (completeSessionBtn) {
+      completeSessionBtn.addEventListener('click', () => this.handleCompleteSession());
     }
 
-    this.animationFrame = requestAnimationFrame(() => this.gameLoop());
-  }
+    const logExerciseBtn = document.getElementById('logExerciseBtn');
+    if (logExerciseBtn) {
+      logExerciseBtn.addEventListener('click', () => this.handleLogExercise());
+    }
 
-  updateEnemies() {
-    this.state.enemies.forEach(enemy => {
-      if (!enemy.path || enemy.path.length === 0) return;
+    // Rep counter buttons
+    document.querySelectorAll('.rep-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const delta = parseInt(btn.dataset.delta);
+        this.handleRepChange(delta);
+      });
+    });
 
-      // Clear old position
-      if (this.state.mazeGrid[enemy.y][enemy.x] === TILE_TYPES.ENEMY) {
-        this.state.mazeGrid[enemy.y][enemy.x] = TILE_TYPES.PATH;
-      }
+    // Timer toggle
+    const timerToggleBtn = document.getElementById('timerToggleBtn');
+    if (timerToggleBtn) {
+      timerToggleBtn.addEventListener('click', () => this.handleTimerToggle());
+    }
 
-      // Move to next position in path
-      this.enemyIndex = (this.enemyIndex + 1) % enemy.path.length;
-      const [newX, newY] = enemy.path[this.enemyIndex];
+    // Success overlay
+    const successContinueBtn = document.getElementById('successContinueBtn');
+    if (successContinueBtn) {
+      successContinueBtn.addEventListener('click', () => {
+        this.screenManager.hideOverlay('success');
+        this.navigateToScreen('home');
+      });
+    }
 
-      enemy.x = newX;
-      enemy.y = newY;
+    // Sticker overlay
+    const closeStickerBtn = document.getElementById('closeStickerBtn');
+    if (closeStickerBtn) {
+      closeStickerBtn.addEventListener('click', () => {
+        this.screenManager.hideOverlay('sticker');
+      });
+    }
 
-      // Don't overwrite player
-      if (this.state.mazeGrid[newY][newX] !== TILE_TYPES.PLAYER) {
-        this.state.mazeGrid[newY][newX] = TILE_TYPES.ENEMY;
+    // Sticker grid clicks (delegated)
+    document.addEventListener('click', (e) => {
+      const stickerCard = e.target.closest('.sticker-card');
+      if (stickerCard) {
+        const stickerId = stickerCard.dataset.stickerId;
+        this.handleViewSticker(stickerId);
       }
     });
 
-    this.renderer.updateMaze(this.state.mazeGrid);
+    // Friends screen
+    const addFriendBtn = document.getElementById('addFriendBtn');
+    if (addFriendBtn) {
+      addFriendBtn.addEventListener('click', () => {
+        this.screenManager.showOverlay('addFriend');
+      });
+    }
 
-    // Check collision after enemy movement
-    if (!this.state.isMoving && this.checkEnemyCollision()) {
-      this.handleEnemyCollision();
+    const closeAddFriendBtn = document.getElementById('closeAddFriendBtn');
+    if (closeAddFriendBtn) {
+      closeAddFriendBtn.addEventListener('click', () => {
+        this.screenManager.hideOverlay('addFriend');
+      });
+    }
+
+    const addFriendForm = document.getElementById('addFriendForm');
+    if (addFriendForm) {
+      addFriendForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('friendNameInput');
+        if (input && input.value.trim()) {
+          this.handleAddFriend(input.value.trim());
+          input.value = '';
+          this.screenManager.hideOverlay('addFriend');
+        }
+      });
+    }
+
+    // Sort toggle
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.updateFriendsScreen(btn.dataset.sort);
+      });
+    });
+
+    // Settings
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        this.openSettings();
+      });
+    }
+
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    if (closeSettingsBtn) {
+      closeSettingsBtn.addEventListener('click', () => {
+        this.screenManager.hideOverlay('settings');
+      });
+    }
+
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    if (soundToggleBtn) {
+      soundToggleBtn.addEventListener('click', () => {
+        this.handleToggleSound();
+      });
+    }
+
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if (saveSettingsBtn) {
+      saveSettingsBtn.addEventListener('click', () => {
+        this.handleSaveSettings();
+      });
     }
   }
 
-  saveProgress() {
-    try {
-      const data = {
-        maxLevel: this.state.maxLevelUnlocked,
-        currentLevel: this.state.currentLevel
-      };
-      localStorage.setItem('mazeEscapeProgress', JSON.stringify(data));
-    } catch (e) {
-      console.warn('Could not save progress');
+  navigateToScreen(screenName) {
+    this.screenManager.showScreen(screenName);
+
+    // Update screen content when navigating
+    switch (screenName) {
+      case 'home':
+        this.updateDashboard();
+        break;
+      case 'logger':
+        this.updateLoggerScreen();
+        break;
+      case 'profile':
+        this.updateProfileScreen();
+        break;
+      case 'friends':
+        this.updateFriendsScreen();
+        break;
+      case 'history':
+        this.updateHistoryScreen();
+        break;
     }
   }
 
-  loadProgress() {
-    try {
-      const data = JSON.parse(localStorage.getItem('mazeEscapeProgress') || '{}');
-      this.state.maxLevelUnlocked = data.maxLevel || 1;
-      this.state.currentLevel = data.currentLevel || 1;
-    } catch {
-      this.state.maxLevelUnlocked = 1;
-      this.state.currentLevel = 1;
-    }
+  handleQuickLog() {
+    this.state.startSession();
+    this.navigateToScreen('logger');
   }
 
-  saveLevelStats() {
-    try {
-      const stats = JSON.parse(localStorage.getItem('mazeEscapeLevelStats') || '{}');
-      const levelKey = this.state.currentLevel.toString();
+  handleSelectExercise(type) {
+    this.currentExerciseType = type;
+    this.currentReps = 0;
 
-      const currentBest = stats[levelKey]?.bestTime;
+    // Update UI
+    const repCounterSection = document.getElementById('repCounterSection');
+    const selectedIcon = document.getElementById('selectedExerciseIcon');
+    const selectedName = document.getElementById('selectedExerciseName');
+    const repDisplay = document.getElementById('repDisplay');
 
-      if (!currentBest || this.state.timer < currentBest) {
-        stats[levelKey] = {
-          bestTime: this.state.timer,
-          bestMoves: this.state.moves
-        };
-        localStorage.setItem('mazeEscapeLevelStats', JSON.stringify(stats));
+    if (repCounterSection) repCounterSection.classList.remove('hidden');
+
+    const exercise = this.state.exercises[type];
+    if (selectedIcon) selectedIcon.textContent = exercise.icon;
+    if (selectedName) selectedName.textContent = exercise.name;
+    if (repDisplay) repDisplay.textContent = this.currentReps;
+
+    // Highlight selected exercise
+    document.querySelectorAll('.exercise-card').forEach(card => {
+      if (card.dataset.exerciseType === type) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
+
+    this.updatePointsPreview();
+  }
+
+  handleRepChange(delta) {
+    this.currentReps = Math.max(0, this.currentReps + delta);
+
+    const repDisplay = document.getElementById('repDisplay');
+    if (repDisplay) {
+      repDisplay.textContent = this.currentReps;
+    }
+
+    this.updatePointsPreview();
+  }
+
+  handleTimerToggle() {
+    const timerToggleBtn = document.getElementById('timerToggleBtn');
+
+    if (!this.timerRunning) {
+      // Start timer
+      this.timerRunning = true;
+      this.sessionTimer = setInterval(() => {
+        this.sessionDuration++;
+        const timerDisplay = document.getElementById('timerDisplay');
+        if (timerDisplay) {
+          timerDisplay.textContent = formatTime(this.sessionDuration);
+        }
+      }, 1000);
+
+      if (timerToggleBtn) timerToggleBtn.textContent = 'Stop';
+    } else {
+      // Stop timer
+      this.timerRunning = false;
+      if (this.sessionTimer) {
+        clearInterval(this.sessionTimer);
+        this.sessionTimer = null;
       }
 
-      return currentBest;
-    } catch {
-      return null;
+      if (timerToggleBtn) timerToggleBtn.textContent = 'Start';
     }
   }
 
-  updateSoundIcon() {
-    const icon = document.getElementById('soundIcon');
-    icon.textContent = this.sound.muted ? '🔇' : '🔊';
+  handleLogExercise() {
+    if (!this.currentExerciseType || this.currentReps === 0) {
+      this.animator.shakeError(document.getElementById('repDisplay'));
+      return;
+    }
+
+    this.state.addExerciseToSession(this.currentExerciseType, this.currentReps);
+    this.sound.playSound('log');
+
+    // Reset counter
+    this.currentReps = 0;
+    this.currentExerciseType = null;
+
+    // Update UI
+    const repDisplay = document.getElementById('repDisplay');
+    if (repDisplay) repDisplay.textContent = 0;
+
+    const repCounterSection = document.getElementById('repCounterSection');
+    if (repCounterSection) repCounterSection.classList.add('hidden');
+
+    document.querySelectorAll('.exercise-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+
+    // Show session summary
+    this.updateSessionSummary();
+  }
+
+  handleCompleteSession() {
+    const result = this.state.completeSession();
+
+    if (!result) {
+      alert('Add at least one exercise to complete the session!');
+      return;
+    }
+
+    // Stop timer if running
+    if (this.timerRunning) {
+      this.handleTimerToggle();
+    }
+    this.sessionDuration = 0;
+
+    // Show success overlay
+    this.showSuccessOverlay(result.session, result.newStickers);
+
+    // Reset logger screen
+    this.resetLoggerScreen();
+
+    // Play sounds
+    this.sound.playSound('streak');
+    if (result.newStickers.length > 0) {
+      setTimeout(() => this.sound.playSound('unlock'), 300);
+    }
+  }
+
+  handleAddFriend(name) {
+    // Generate mock friend data
+    const friend = {
+      id: `friend-${Date.now()}`,
+      name: name,
+      totalPoints: Math.floor(Math.random() * 2000),
+      currentStreak: Math.floor(Math.random() * 20),
+      level: Math.floor(Math.random() * 8) + 1,
+      lastSeen: new Date().toISOString()
+    };
+
+    this.state.friends.push(friend);
+    this.state.saveFriends();
+
+    this.updateFriendsScreen();
+  }
+
+  handleViewSticker(stickerId) {
+    const sticker = this.state.stickers[stickerId];
+    if (!sticker) return;
+
+    const isUnlocked = this.state.user.unlockedStickers.includes(stickerId);
+
+    // Update sticker detail overlay
+    document.getElementById('stickerDetailIcon').textContent = sticker.icon;
+    document.getElementById('stickerDetailName').textContent = sticker.name;
+    document.getElementById('stickerDetailDescription').textContent = sticker.description;
+
+    const progressSection = document.getElementById('stickerProgressSection');
+    const unlockedSection = document.getElementById('stickerUnlockedSection');
+
+    if (isUnlocked) {
+      progressSection.classList.add('hidden');
+      unlockedSection.classList.remove('hidden');
+    } else {
+      const achievementEngine = new AchievementEngine(this.state.stickers, this.state.user, this.state.sessions);
+      const progress = achievementEngine.getProgress(stickerId);
+
+      const progressBar = document.getElementById('stickerProgressBar');
+      const progressText = document.getElementById('stickerProgressText');
+
+      if (progressBar) progressBar.style.width = progress + '%';
+      if (progressText) progressText.textContent = progress + '%';
+
+      progressSection.classList.remove('hidden');
+      unlockedSection.classList.add('hidden');
+    }
+
+    this.screenManager.showOverlay('sticker');
+  }
+
+  handleToggleSound() {
+    this.state.settings.soundMuted = !this.state.settings.soundMuted;
+    this.sound.setMuted(this.state.settings.soundMuted);
+
+    const soundIcon = document.getElementById('soundIcon');
+    const soundStatus = document.getElementById('soundStatus');
+
+    if (soundIcon) {
+      soundIcon.textContent = this.state.settings.soundMuted ? '🔇' : '🔊';
+    }
+
+    if (soundStatus) {
+      soundStatus.textContent = this.state.settings.soundMuted ? 'Off' : 'On';
+    }
+  }
+
+  handleSaveSettings() {
+    const dailyGoalInput = document.getElementById('dailyGoalInput');
+    const weeklyGoalInput = document.getElementById('weeklyGoalInput');
+
+    if (dailyGoalInput) {
+      this.state.settings.dailyGoal = parseInt(dailyGoalInput.value) || 50;
+    }
+
+    if (weeklyGoalInput) {
+      this.state.settings.weeklyGoal = parseInt(weeklyGoalInput.value) || 500;
+    }
+
+    this.state.saveSettings();
+    this.screenManager.hideOverlay('settings');
+    this.updateDashboard();
+
+    this.sound.playSound('log');
+  }
+
+  openSettings() {
+    // Populate current settings
+    const dailyGoalInput = document.getElementById('dailyGoalInput');
+    const weeklyGoalInput = document.getElementById('weeklyGoalInput');
+    const soundIcon = document.getElementById('soundIcon');
+    const soundStatus = document.getElementById('soundStatus');
+
+    if (dailyGoalInput) dailyGoalInput.value = this.state.settings.dailyGoal;
+    if (weeklyGoalInput) weeklyGoalInput.value = this.state.settings.weeklyGoal;
+
+    if (soundIcon) {
+      soundIcon.textContent = this.state.settings.soundMuted ? '🔇' : '🔊';
+    }
+
+    if (soundStatus) {
+      soundStatus.textContent = this.state.settings.soundMuted ? 'Off' : 'On';
+    }
+
+    this.screenManager.showOverlay('settings');
+  }
+
+  updateDashboard() {
+    // Update streak
+    this.screenManager.updateStreakDisplay(this.state.user.currentStreak);
+
+    // Update stats
+    const pointsToday = this.state.getTodaysPoints();
+    const totalPoints = this.state.user.totalPoints;
+    const level = this.state.user.level;
+
+    document.getElementById('pointsToday').textContent = pointsToday;
+    document.getElementById('totalPoints').textContent = totalPoints;
+    document.getElementById('userLevel').textContent = level;
+
+    // Update progress bars
+    const weeklyPoints = this.state.getWeeklyPoints();
+    this.screenManager.updateProgressBar('dailyProgress', pointsToday, this.state.settings.dailyGoal);
+    this.screenManager.updateProgressBar('weeklyProgress', weeklyPoints, this.state.settings.weeklyGoal);
+
+    // Update motivational message
+    const message = this.getMotivationalMessage();
+    this.screenManager.showMotivationalMessage(message);
+  }
+
+  updateLoggerScreen() {
+    // Render exercise grid
+    const exerciseGrid = document.getElementById('exerciseGrid');
+    if (exerciseGrid) {
+      exerciseGrid.innerHTML = '';
+
+      Object.keys(this.state.exercises).forEach(type => {
+        const exercise = this.state.exercises[type];
+
+        const card = document.createElement('div');
+        card.className = 'exercise-card';
+        card.dataset.exerciseType = type;
+
+        const icon = document.createElement('span');
+        icon.className = 'exercise-icon';
+        icon.textContent = exercise.icon;
+
+        const name = document.createElement('div');
+        name.className = 'exercise-name';
+        name.textContent = exercise.name;
+
+        const points = document.createElement('div');
+        points.className = 'exercise-points';
+        points.textContent = `${exercise.pointsPerRep} pt per ${exercise.unit || 'rep'}`;
+
+        card.appendChild(icon);
+        card.appendChild(name);
+        card.appendChild(points);
+
+        card.addEventListener('click', () => this.handleSelectExercise(type));
+
+        exerciseGrid.appendChild(card);
+      });
+    }
+
+    // Reset counter
+    const repCounterSection = document.getElementById('repCounterSection');
+    if (repCounterSection) repCounterSection.classList.add('hidden');
+
+    const sessionSummary = document.getElementById('sessionSummary');
+    if (sessionSummary) sessionSummary.classList.add('hidden');
+  }
+
+  updateProfileScreen() {
+    // Update user info
+    document.getElementById('userName').textContent = this.state.user.name;
+    document.getElementById('profileTotalPoints').textContent = this.state.user.totalPoints;
+    document.getElementById('profileLevel').textContent = this.state.user.level;
+    document.getElementById('profileWorkouts').textContent = this.state.sessions.length;
+    document.getElementById('profileLongestStreak').textContent = this.state.user.longestStreak;
+
+    // Render sticker grid
+    this.screenManager.renderStickerGrid(this.state.stickers, this.state.user.unlockedStickers);
+  }
+
+  updateFriendsScreen(sortBy = 'points') {
+    this.screenManager.renderLeaderboard(this.state.friends, this.state.user, sortBy);
+  }
+
+  updateHistoryScreen() {
+    const historyList = document.getElementById('historyList');
+    const emptyState = document.getElementById('historyEmptyState');
+
+    if (!historyList) return;
+
+    if (this.state.sessions.length === 0) {
+      historyList.innerHTML = '';
+      if (emptyState) emptyState.classList.remove('hidden');
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+
+    historyList.innerHTML = '';
+
+    // Show sessions in reverse chronological order
+    const sortedSessions = [...this.state.sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sortedSessions.forEach(session => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+
+      const date = document.createElement('div');
+      date.className = 'history-date';
+      date.textContent = formatDate(session.date);
+
+      const exercises = document.createElement('div');
+      exercises.className = 'history-exercises';
+      exercises.textContent = session.exercises.map(ex => {
+        const exerciseName = this.state.exercises[ex.type]?.name || ex.type;
+        return `${exerciseName}: ${ex.reps}`;
+      }).join(', ');
+
+      const points = document.createElement('div');
+      points.className = 'history-points';
+      points.textContent = `${session.totalPoints} points`;
+
+      item.appendChild(date);
+      item.appendChild(exercises);
+      item.appendChild(points);
+
+      historyList.appendChild(item);
+    });
+  }
+
+  updateSessionSummary() {
+    const sessionSummary = document.getElementById('sessionSummary');
+    const sessionExerciseList = document.getElementById('sessionExerciseList');
+    const sessionTotalPoints = document.getElementById('sessionTotalPoints');
+
+    if (!this.state.currentSession || this.state.currentSession.exercises.length === 0) {
+      if (sessionSummary) sessionSummary.classList.add('hidden');
+      return;
+    }
+
+    if (sessionSummary) sessionSummary.classList.remove('hidden');
+
+    // Render exercise list
+    if (sessionExerciseList) {
+      sessionExerciseList.innerHTML = '';
+
+      this.state.currentSession.exercises.forEach((ex, index) => {
+        const item = document.createElement('div');
+        item.className = 'session-exercise-item';
+
+        const exerciseName = this.state.exercises[ex.type]?.name || ex.type;
+        const name = document.createElement('span');
+        name.textContent = `${exerciseName}: ${ex.reps}`;
+
+        const pointsSpan = document.createElement('span');
+        pointsSpan.textContent = `${ex.points} pts`;
+
+        item.appendChild(name);
+        item.appendChild(pointsSpan);
+
+        sessionExerciseList.appendChild(item);
+      });
+    }
+
+    // Update total
+    if (sessionTotalPoints) {
+      sessionTotalPoints.textContent = this.state.currentSession.calculateTotal();
+    }
+  }
+
+  updatePointsPreview() {
+    if (!this.currentExerciseType || this.currentReps === 0) {
+      const previewPoints = document.getElementById('previewPoints');
+      if (previewPoints) previewPoints.textContent = '0';
+      return;
+    }
+
+    const points = this.state.calculatePoints(this.currentExerciseType, this.currentReps);
+    const previewPoints = document.getElementById('previewPoints');
+    if (previewPoints) previewPoints.textContent = points;
+  }
+
+  resetLoggerScreen() {
+    this.currentExerciseType = null;
+    this.currentReps = 0;
+
+    const repCounterSection = document.getElementById('repCounterSection');
+    if (repCounterSection) repCounterSection.classList.add('hidden');
+
+    const sessionSummary = document.getElementById('sessionSummary');
+    if (sessionSummary) sessionSummary.classList.add('hidden');
+
+    const repDisplay = document.getElementById('repDisplay');
+    if (repDisplay) repDisplay.textContent = 0;
+
+    const timerDisplay = document.getElementById('timerDisplay');
+    if (timerDisplay) timerDisplay.textContent = '00:00';
+
+    document.querySelectorAll('.exercise-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+  }
+
+  showSuccessOverlay(session, newStickers) {
+    const pointsEarned = document.getElementById('pointsEarned');
+    const successStreakCount = document.getElementById('successStreakCount');
+    const newStickersSection = document.getElementById('newStickersSection');
+    const newStickersList = document.getElementById('newStickersList');
+    const successMessage = document.getElementById('successMessage');
+
+    // Animate points count-up
+    if (pointsEarned) {
+      this.animator.countUpPoints(pointsEarned, 0, session.totalPoints, 800);
+    }
+
+    // Update streak
+    if (successStreakCount) {
+      successStreakCount.textContent = this.state.user.currentStreak;
+    }
+
+    // Show new stickers
+    if (newStickers.length > 0) {
+      if (newStickersSection) newStickersSection.classList.remove('hidden');
+      if (newStickersList) {
+        newStickersList.innerHTML = '';
+        newStickers.forEach(stickerId => {
+          const sticker = this.state.stickers[stickerId];
+          if (sticker) {
+            const item = document.createElement('div');
+            item.className = 'new-sticker-item';
+            item.textContent = sticker.icon;
+            this.animator.celebrateStickerUnlock(item);
+            newStickersList.appendChild(item);
+          }
+        });
+      }
+
+      // Show confetti
+      this.animator.showConfetti();
+    } else {
+      if (newStickersSection) newStickersSection.classList.add('hidden');
+    }
+
+    // Motivational message
+    if (successMessage) {
+      const messages = [
+        "Keep up the great work!",
+        "You're crushing it!",
+        "Awesome session!",
+        "One step closer to your goals!",
+        "Consistency is key!",
+        "You're on fire! 🔥"
+      ];
+      successMessage.textContent = messages[Math.floor(Math.random() * messages.length)];
+    }
+
+    this.screenManager.showOverlay('success');
+  }
+
+  getMotivationalMessage() {
+    const todaysPoints = this.state.getTodaysPoints();
+    const streak = this.state.user.currentStreak;
+
+    if (todaysPoints === 0) {
+      if (streak > 0) {
+        return `Keep your ${streak}-day streak alive! 🔥`;
+      }
+      return "Ready to start tracking? Log your first workout!";
+    }
+
+    if (todaysPoints >= this.state.settings.dailyGoal) {
+      return `Daily goal crushed! ${todaysPoints} points today! 💪`;
+    }
+
+    const remaining = this.state.settings.dailyGoal - todaysPoints;
+    return `${remaining} more points to hit your daily goal!`;
   }
 }
 
 // ========================================
-// INITIALIZE GAME
+// INITIALIZE APP
 // ========================================
 
+let app;
+
 document.addEventListener('DOMContentLoaded', () => {
-  new Game();
+  app = new App();
 });
